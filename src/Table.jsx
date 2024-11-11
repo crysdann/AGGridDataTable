@@ -1,43 +1,49 @@
-import React from "react";
+import React, { useState } from "react";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
 import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
+
 // import { CsvExportModule } from "@ag-grid-community/csv-export";
 
 const Table = () => {
-  // const data = [
-  //   { id: "Marc", name: 16, email: 2001, body: "898-787-6787" },
-  //   { name: "John", age: 43, birthyear: 1997, phonenumber: "676-343-5674" },
-  //   { name: "Phil", age: 33, birthyear: 2002, phonenumber: "565-434-4335" },
-  // ];
-  const columns = [
+  const [gridApi, setGridApi] = useState(null);
+  const [isEmailHidden, setIsEmailHidden] = useState(true);
+  const [columnDefs, setColumnDefs] = useState([
     {
       headerName: "Id",
       field: "id",
-      checkboxSelection: true,
-      headerCheckboxSelection: true,
     },
     {
       headerName: "Name",
       field: "name",
-      // cellStyle: (params) =>
-      //   params.value > 18
-      //     ? { borderLeft: "4px solid green" }
-      //     : { borderLeft: "4px solid red" },
-      // cellClass: (params) => (params.value > 18 ? "moreThan18" : "lessThan18"),
-      // tooltipField: "name",
     },
     {
       headerName: "Email",
       field: "email",
+      cellClass: (params) => {
+        if (params.value && params.value.includes("biz")) {
+          return "biz";
+        } else if (params.value && params.value.includes("org")) {
+          return "org";
+        } else if (params.value && params.value.includes("com")) {
+          return "com";
+        } else if (params.value && params.value.includes("net")) {
+          return "net";
+        } else if (params.value && params.value.includes("edu")) {
+          return "edu";
+        } else if (params.value && params.value.includes("gov")) {
+          return "gov";
+        }
+      },
+      hide: true,
     },
     {
       headerName: "Body",
       field: "body",
     },
-  ];
+  ]);
   const gridOptions = {
-    rowSelection: { mode: "multiRow" },
+    rowSelection: { mode: "multiRow", checkboxes: true },
     defaultColDef: {
       sortable: true,
       editable: true,
@@ -45,37 +51,57 @@ const Table = () => {
       floatingFilter: true,
       flex: 1,
     },
+    paginationPageSize: 10,
   };
-  let gridApi;
+
   const onGridReady = (params) => {
-    gridApi = params.api;
-    console.log("params: ", params);
+    setGridApi(params.api);
     fetch("https://jsonplaceholder.typicode.com/comments")
       .then((resp) => resp.json())
-      .then((resp) => params.api.applyTransaction({ add: resp }));
+      .then((data) => params.api.applyTransaction({ add: data }));
   };
   const onExportClick = () => {
     gridApi.exportDataAsCsv();
   };
   const onSelectionChanged = (event) =>
     console.log("event", event.api.getSelectedRows());
-  const rowSelectionType = "multiple";
+
+  const showHiddenField = () => {
+    if (gridApi) {
+      setIsEmailHidden((prevIsHidden) => {
+        // debugger;
+        const newIsHidden = !prevIsHidden;
+        setColumnDefs((prevDefs) =>
+          prevDefs.map((col) =>
+            col.field === "email" ? { ...col, hide: newIsHidden } : col
+          )
+        );
+
+        return newIsHidden;
+      });
+    } else {
+      console.log("GridColumnApi is not initialized");
+    }
+  };
   return (
     <div>
       <button onClick={() => onExportClick()}>Export</button>
+      <button onClick={showHiddenField}>
+        {isEmailHidden ? "Show" : "Hide"} Email Column
+      </button>
       <div
         className="ag-theme-quartz" // applying the Data Grid theme
-        style={{ height: 500 }} // the Data Grid will fill the size of the parent container
+        style={{ height: 600 }} // the Data Grid will fill the size of the parent container
       >
         <AgGridReact
-          // rowData={data}
-          columnDefs={columns}
+          columnDefs={columnDefs}
           onGridReady={onGridReady}
           gridOptions={gridOptions}
           enableBrowserTooltips={true}
-          rowSelection={rowSelectionType}
           onSelectionChanged={onSelectionChanged}
-          rowMultiSelectWithClick={true}></AgGridReact>
+          pagination={true}
+          paginationPageSize={10}
+          paginationPageSizeSelector={[10, 20, 30, 40, 50]}></AgGridReact>
       </div>
     </div>
   );
