@@ -54,3 +54,25 @@
 .gov {
   border-left: 5px solid #003366 !important;
 }
+.searchBar {
+  background-color: #ecedec;
+  padding: 10px;
+}
+.searchInput {
+  width: 100%;
+  padding: 10px 20px;
+  box-sizing: border-box;
+  border-radius: 20px;
+  border: 1px solid grey;
+  outline: 0;
+  font-size: 100%;
+}
+button {
+  padding: 9px;
+  margin: 5px;
+  border-radius: 10px;
+  border: 1px solid #ee565d;
+  font-size: 90%;
+  background-color: #ee565d;
+  color: white;
+}

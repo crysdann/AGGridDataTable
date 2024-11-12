@@ -1,22 +1,15 @@
 import React, { useState } from "react";
 import { AgGridReact } from "ag-grid-react";
-import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
-import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
-
-// import { CsvExportModule } from "@ag-grid-community/csv-export";
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-quartz.css";
 
 const Table = () => {
   const [gridApi, setGridApi] = useState(null);
-  const [isEmailHidden, setIsEmailHidden] = useState(true);
-  const [columnDefs, setColumnDefs] = useState([
-    {
-      headerName: "Id",
-      field: "id",
-    },
-    {
-      headerName: "Name",
-      field: "name",
-    },
+  const [isEmailHidden, setIsEmailHidden] = useState(false);
+
+  const columns = [
+    { headerName: "Id", field: "id" },
+    { headerName: "Name", field: "name" },
     {
       headerName: "Email",
       field: "email",
@@ -35,24 +28,10 @@ const Table = () => {
           return "gov";
         }
       },
-      hide: true,
+      hide: isEmailHidden,
     },
-    {
-      headerName: "Body",
-      field: "body",
-    },
-  ]);
-  const gridOptions = {
-    rowSelection: { mode: "multiRow", checkboxes: true },
-    defaultColDef: {
-      sortable: true,
-      editable: true,
-      filter: true,
-      floatingFilter: true,
-      flex: 1,
-    },
-    paginationPageSize: 10,
-  };
+    { headerName: "Body", field: "body" },
+  ];
 
   const onGridReady = (params) => {
     setGridApi(params.api);
@@ -60,48 +39,58 @@ const Table = () => {
       .then((resp) => resp.json())
       .then((data) => params.api.applyTransaction({ add: data }));
   };
+
   const onExportClick = () => {
-    gridApi.exportDataAsCsv();
+    if (gridApi) gridApi.exportDataAsCsv();
   };
-  const onSelectionChanged = (event) =>
-    console.log("event", event.api.getSelectedRows());
 
   const showHiddenField = () => {
+    setIsEmailHidden((prev) => {
+      gridApi.setColumnVisible("email", !prev);
+      return !prev;
+    });
+  };
+  console.log("GridApi", gridApi);
+  const searchText = (e) => {
     if (gridApi) {
-      setIsEmailHidden((prevIsHidden) => {
-        // debugger;
-        const newIsHidden = !prevIsHidden;
-        setColumnDefs((prevDefs) =>
-          prevDefs.map((col) =>
-            col.field === "email" ? { ...col, hide: newIsHidden } : col
-          )
-        );
-
-        return newIsHidden;
-      });
-    } else {
-      console.log("GridColumnApi is not initialized");
+      console.log("search value", document.getElementById("search").value);
+      gridApi.setGridOption(
+        "quickFilterText",
+        document.getElementById("search").value
+      );
     }
   };
+
   return (
     <div>
-      <button onClick={() => onExportClick()}>Export</button>
+      <button onClick={onExportClick}>Export</button>
       <button onClick={showHiddenField}>
         {isEmailHidden ? "Show" : "Hide"} Email Column
       </button>
-      <div
-        className="ag-theme-quartz" // applying the Data Grid theme
-        style={{ height: 600 }} // the Data Grid will fill the size of the parent container
-      >
+      <div className="searchBar">
+        <input
+          type="text"
+          id="search"
+          placeholder="Search..."
+          className="searchInput"
+          onChange={searchText}
+        />
+      </div>
+      <div className="ag-theme-quartz" style={{ height: 600 }}>
         <AgGridReact
-          columnDefs={columnDefs}
+          columnDefs={columns}
           onGridReady={onGridReady}
-          gridOptions={gridOptions}
-          enableBrowserTooltips={true}
-          onSelectionChanged={onSelectionChanged}
+          rowSelection="multiple"
+          defaultColDef={{
+            sortable: true,
+            editable: true,
+            filter: true,
+            floatingFilter: true,
+            flex: 1,
+          }}
           pagination={true}
           paginationPageSize={10}
-          paginationPageSizeSelector={[10, 20, 30, 40, 50]}></AgGridReact>
+        />
       </div>
     </div>
   );
